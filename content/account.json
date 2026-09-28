@@ -1,0 +1,6 @@
+{
+  "_説明": "アカウントの公開情報（秘密じゃないのでコミットしてOK）。name はキャプション末尾のアソシエイト開示文に、handle は画像右下に入る",
+  "name": "くらしラク図鑑",
+  "handle": "@kurashi_raku_room",
+  "storefrontUrl": ""
+}

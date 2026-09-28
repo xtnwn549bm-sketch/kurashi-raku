@@ -1,0 +1,6 @@
+node_modules/
+.env
+.claude/settings.local.json
+
+# 画像生成の中間ファイル（最終JPEGだけコミットする）
+posts/**/raw/

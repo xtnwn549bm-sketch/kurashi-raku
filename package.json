@@ -1,0 +1,25 @@
+{
+  "name": "amazon-associates-instagram",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Amazonアソシエイト × Instagram 収益化パイプライン（暮らし・家事・収納）",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-setup.js",
+    "build-posts": "node scripts/build-posts.js",
+    "images": "node scripts/gen-images.js",
+    "storefront": "node scripts/storefront-checklist.js",
+    "status": "node scripts/status.js",
+    "publish": "node scripts/publish.js",
+    "publish:dry": "node scripts/publish.js --dry-run",
+    "refresh-token": "node scripts/refresh-token.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "dotenv": "^16.4.5",
+    "minimist": "^1.2.8",
+    "sharp": "^0.35.5"
+  }
+}

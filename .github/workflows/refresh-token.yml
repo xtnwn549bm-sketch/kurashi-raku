@@ -1,0 +1,29 @@
+name: Instagramトークン更新
+
+on:
+  schedule:
+    # 毎月15日と29日の 03:00 JST（= 14日・28日の 18:00 UTC）。長期トークンは60日で切れるので余裕をもって更新する
+    - cron: '0 18 14,28 * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: トークンを更新して Secrets に保存
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          # Secrets を書き換えるため、リポジトリの Secrets 書き込み権限つきの個人アクセストークンが必要
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -o pipefail
+          node scripts/refresh-token.js --stdout | gh secret set IG_ACCESS_TOKEN --repo "${{ github.repository }}"
