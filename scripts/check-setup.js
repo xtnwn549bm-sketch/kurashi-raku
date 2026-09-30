@@ -10,6 +10,7 @@ const { associateTag } = require('../lib/amazon');
 const { renderText } = require('../lib/draw');
 const { checkModelAccess, QUALITY } = require('../lib/openai-image');
 const instagram = require('../lib/instagram');
+const { getEnv: supabaseEnv } = require('../lib/storage');
 
 const checks = [
   {
@@ -41,9 +42,7 @@ const checks = [
   {
     name: 'Supabase Storage（バケット）',
     run: async () => {
-      const { SUPABASE_URL, SUPABASE_SECRET_KEY } = process.env;
-      const bucket = process.env.SUPABASE_BUCKET || 'ig-images';
-      if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) throw new Error('SUPABASE_URL / SUPABASE_SECRET_KEY が未設定');
+      const { SUPABASE_URL, SUPABASE_SECRET_KEY, bucket } = supabaseEnv();
       const res = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${bucket}`, {
         headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}` },
       });
