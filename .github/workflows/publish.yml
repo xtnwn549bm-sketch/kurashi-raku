@@ -21,6 +21,8 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.record.outputs.published }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +44,7 @@ jobs:
         run: node scripts/publish.js ${{ inputs.dry_run && '--dry-run' || '' }}
 
       - name: 投稿済みの記録をコミット
+        id: record
         run: |
           if [ -n "$(git status --porcelain posts)" ]; then
             git config user.name "github-actions[bot]"
@@ -49,12 +52,13 @@ jobs:
             git add posts
             git commit -m "投稿済みを記録: $(date -u +%Y-%m-%d)"
             git push
+            echo "published=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # 投稿した回をリンク集ページに載せる（ドライランのときはしない）
+  # 投稿した日だけ、その回をリンク集ページに載せる（投稿待ちがない日・ドライランでは動かない）
   site:
     needs: publish
-    if: ${{ !inputs.dry_run }}
+    if: ${{ needs.publish.outputs.published == 'true' }}
     permissions:
       contents: read
       pages: write
