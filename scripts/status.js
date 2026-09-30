@@ -9,8 +9,9 @@
 const fs = require('fs');
 const minimist = require('minimist');
 const { listPosts, loadPost, savePost, slidePath } = require('../lib/posts');
-const { buildSlides, missingTextFields } = require('../lib/prompts');
+const { slideCount, missingTextFields } = require('../lib/slides');
 const { findViolations } = require('../lib/compliance');
+const { associateTag } = require('../lib/amazon');
 
 const args = minimist(process.argv.slice(2), { string: ['approve'] });
 
@@ -21,11 +22,16 @@ function problemsBeforeReady(post) {
   if (!post.caption.trim()) problems.push('キャプションの本文が空');
   problems.push(...missingTextFields(post).map((m) => `文言が足りない: ${m}`));
   problems.push(...findViolations(post));
-  const slideCount = buildSlides(post).length;
-  for (let i = 0; i < slideCount; i += 1) {
+  for (let i = 0; i < slideCount(post); i += 1) {
     if (!fs.existsSync(slidePath(post.id, i))) problems.push(`slide${i + 1}.jpg がない`);
   }
-  if (!post.storefrontDone) problems.push('ストアフロントのアイデアリスト登録が終わってない（storefrontDone: true にする）');
+  const noLink = post.products.map((p, i) => (p.asin ? null : String(i + 1).padStart(2, '0'))).filter(Boolean);
+  if (noLink.length > 0) problems.push(`商品URLが未登録: ${noLink.join(', ')}（npm run links で登録）`);
+  try {
+    associateTag();
+  } catch (err) {
+    problems.push(err.message);
+  }
   return problems;
 }
 
@@ -47,7 +53,8 @@ const counts = {};
 for (const post of posts) {
   counts[post.status] = (counts[post.status] || 0) + 1;
   const extra = post.status === 'published' ? ` ${post.publishedAt} ${post.permalink || ''}` : '';
-  console.log(`${post.status.padEnd(9)} ${post.storefrontDone ? 'リスト済' : 'リスト未'} ${post.id} ${post.title}${extra}`);
+  const linked = post.products.filter((p) => p.asin).length;
+  console.log(`${post.status.padEnd(9)} 商品${linked}/${post.products.length} ${post.id} ${post.title}${extra}`);
 }
 console.log(`\n合計${posts.length}本: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(' / ')}`);
 const readyCount = counts.ready || 0;

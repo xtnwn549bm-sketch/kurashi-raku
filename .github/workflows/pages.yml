@@ -1,0 +1,54 @@
+name: リンク集ページの公開
+
+on:
+  # 手元で投稿を承認・修正して push したとき
+  push:
+    branches: [main]
+    paths:
+      - 'posts/**'
+      - 'content/**'
+      - 'lib/**'
+      - 'scripts/build-site.js'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+  # 自動投稿（publish.yml）の直後に呼ばれる。bot の push では push トリガーが動かないため
+  workflow_call:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 自動投稿ジョブが直前に push した「投稿済み」の記録まで含めるため、最新の main を取る
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: node scripts/build-site.js
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

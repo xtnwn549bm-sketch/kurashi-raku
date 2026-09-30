@@ -14,7 +14,7 @@ const minimist = require('minimist');
 const instagram = require('../lib/instagram');
 const { uploadImage } = require('../lib/storage');
 const { CAPTION_HEADER, listPosts, loadPost, savePost, slidePath, buildCaption } = require('../lib/posts');
-const { buildSlides } = require('../lib/prompts');
+const { slideCount } = require('../lib/slides');
 const { findViolations } = require('../lib/compliance');
 
 const args = minimist(process.argv.slice(2), { boolean: ['dry-run'], string: ['post'] });
@@ -51,10 +51,9 @@ function pickPost() {
 
   console.log(`▶ ${post.id}「${post.title}」${dryRun ? '（ドライラン）' : ''}`);
 
-  const slideCount = buildSlides(post).length;
   const version = Date.now();
   const imageUrls = [];
-  for (let i = 0; i < slideCount; i += 1) {
+  for (let i = 0; i < slideCount(post); i += 1) {
     const localPath = slidePath(post.id, i);
     if (!fs.existsSync(localPath)) throw new Error(`slide${i + 1}.jpg がない`);
     // 同じパスだと Instagram 側のキャッシュで古い画像が使われることがあるので毎回別名にする

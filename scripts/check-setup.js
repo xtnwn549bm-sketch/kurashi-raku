@@ -6,7 +6,9 @@
 
 const { loadAccount } = require('../lib/config');
 const { associateDisclosure } = require('../lib/posts');
-const { findFont } = require('../lib/label');
+const { associateTag } = require('../lib/amazon');
+const { renderText } = require('../lib/draw');
+const { checkModelAccess, QUALITY } = require('../lib/openai-image');
 const instagram = require('../lib/instagram');
 
 const checks = [
@@ -15,21 +17,25 @@ const checks = [
     run: async () => {
       const account = loadAccount();
       if (!account.handle || !account.handle.startsWith('@')) throw new Error('handle を「@ユーザーネーム」の形で入れて');
-      if (!/^https:\/\/www\.amazon\.co\.jp\/shop\/[^/\s]+/.test(account.storefrontUrl || '')) {
-        throw new Error('storefrontUrl に ストアフロントのURL（https://www.amazon.co.jp/shop/...）を入れて');
-      }
-      return `OK: ${account.handle} / 開示文「${associateDisclosure()}」`;
+      const tag = associateTag();
+      const site = account.siteUrl ? ` / リンク集ページ ${account.siteUrl}` : ' / siteUrl は GitHub Pages を公開したら入れる';
+      return `OK: ${account.handle} / トラッキングID ${tag}${site} / 開示文「${associateDisclosure()}」`;
     },
   },
   {
-    name: 'ラベル用フォント',
-    run: async () => `OK: ${findFont().file}`,
+    name: 'スライド用フォント',
+    run: async () => {
+      // 日本語パスのせいで別の書体にすり替わっていないか、実際に1回描いて確かめる
+      const { width } = await renderText('選ぶときのチェックポイント', { size: 40, weight: 'bold' });
+      if (width < 400) throw new Error(`文字の描画幅がおかしい（${width}px）。FONT_CACHE_DIR を英数字だけのフォルダにして`);
+      return 'OK: Zen Maru Gothic で描画できた';
+    },
   },
   {
-    name: 'Gemini（APIキーの有無）',
+    name: 'OpenAI（画像生成モデルへのアクセス）',
     run: async () => {
-      if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY が未設定');
-      return `設定あり（モデル: ${process.env.NANOBANANA_MODEL || 'gemini-3-pro-image-preview'}）※実際の生成は npm run images で確認`;
+      const model = await checkModelAccess();
+      return `OK: ${model}（quality: ${QUALITY}）※組織の本人確認が済んでないと生成時にエラーになる。実際の生成は npm run images で確認`;
     },
   },
   {

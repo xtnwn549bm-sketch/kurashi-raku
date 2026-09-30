@@ -2,5 +2,8 @@ node_modules/
 .env
 .claude/settings.local.json
 
-# 画像生成の中間ファイル（最終JPEGだけコミットする）
-posts/**/raw/
+# AIイラストの元画像（重いのでコミットしない。スライドJPEGだけコミットする）
+posts/**/illust/
+
+# リンク集ページのビルド結果（GitHub Actions が毎回作る）
+site/

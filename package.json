@@ -9,15 +9,17 @@
   "scripts": {
     "check": "node scripts/check-setup.js",
     "build-posts": "node scripts/build-posts.js",
-    "images": "node scripts/gen-images.js",
-    "storefront": "node scripts/storefront-checklist.js",
+    "images": "node scripts/images.js",
+    "picks": "node scripts/picks-checklist.js",
+    "links": "node scripts/links.js",
     "status": "node scripts/status.js",
+    "site": "node scripts/build-site.js",
+    "site:preview": "node scripts/build-site.js --preview",
     "publish": "node scripts/publish.js",
     "publish:dry": "node scripts/publish.js --dry-run",
     "refresh-token": "node scripts/refresh-token.js"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
     "dotenv": "^16.4.5",
     "minimist": "^1.2.8",
     "sharp": "^0.35.5"

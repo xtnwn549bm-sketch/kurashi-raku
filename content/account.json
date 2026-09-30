@@ -1,6 +1,8 @@
 {
-  "_説明": "アカウントの公開情報（秘密じゃないのでコミットしてOK）。name はキャプション末尾のアソシエイト開示文に、handle は画像右下に入る",
+  "_説明": "アカウントの公開情報（秘密じゃないのでコミットしてOK）。name は開示文に、handle はスライド右下に、associateTag は商品リンクに入る。siteUrl は GitHub Pages のURL。storefrontUrl はアソシエイトの審査に通ってストアフロントを作ったら入れる（リンク集ページにボタンが出る）",
   "name": "くらしラク図鑑",
   "handle": "@kurashi_raku_room",
+  "associateTag": "",
+  "siteUrl": "",
   "storefrontUrl": ""
 }

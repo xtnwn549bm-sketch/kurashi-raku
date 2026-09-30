@@ -50,3 +50,13 @@ jobs:
             git commit -m "投稿済みを記録: $(date -u +%Y-%m-%d)"
             git push
           fi
+
+  # 投稿した回をリンク集ページに載せる（ドライランのときはしない）
+  site:
+    needs: publish
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
