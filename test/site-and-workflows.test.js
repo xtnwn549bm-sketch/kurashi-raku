@@ -23,12 +23,13 @@ test('リンク集ページの文字色はどれも背景とのコントラス�
   const pairs = {
     'Amazonで見る ボタン（白文字 / テラコッタ）': [c['on-accent'], c.terracotta],
     '番号バッジ（白文字 / セージ）': [c['on-accent'], c.sage],
-    'PR 表記・サブボタン（テラコッタ・セージ / カード）': [c.terracotta, c.card],
-    'サブボタン（セージ / カード）': [c.sage, c.card],
-    '補足文字（グレー / カード）': [c.sub, c.card],
-    '補足文字（グレー / 背景）': [c.sub, c.bg],
-    '準備中ボタン（グレー / 線色）': [c.sub, c.line],
-    '本文（濃いグレー / 背景）': [c.text, c.bg],
+    'PR 表記（テラコッタ / 紙）': [c.terracotta, c.sheet],
+    'リスト名・サブボタン・リンク（セージ / 紙）': [c.sage, c.sheet],
+    'ページ名・サブボタン（セージ / 地）': [c.sage, c.bg],
+    '補足文字・準備中ボタン（グレー / 紙）': [c.sub, c.sheet],
+    '開示文（グレー / 地）': [c.sub, c.bg],
+    '本文（濃い色 / 紙）': [c.text, c.sheet],
+    '本文・表紙の名前（濃い色 / 地）': [c.text, c.bg],
   };
   for (const [label, [fg, bg]] of Object.entries(pairs)) {
     assert.ok(contrast(fg, bg) >= 4.5, `${label}: ${contrast(fg, bg).toFixed(2)}:1`);
@@ -47,6 +48,27 @@ test('投稿済みで商品リンクを保留にした商品は、リンクを�
   assert.equal((html.match(/class="button" href=/g) || []).length, 4);
   assert.match(html, /dp\/B0TEST0002\?tag=testtag-22/);
   assert.match(html, /--terracotta: #A85A32;/);
+});
+
+test('表紙の一覧は新しい9件を並べ、それより前は「前の投稿も表示」の中に入れる', () => {
+  const posts = Array.from({ length: 11 }, (_, i) => samplePost(`${String(11 - i).padStart(2, '0')}_site`, { status: 'published' }));
+  const html = renderPage(posts, new Set(['11_site']));
+  const [shown, older] = html.split('<details>');
+
+  assert.equal((shown.match(/<li><a href="#\d\d_site">/g) || []).length, 9);
+  assert.match(older, /前の投稿も表示（2件）/);
+  assert.match(older, /href="#02_site"/);
+  assert.match(older, /href="#01_site"/);
+  assert.match(shown, /<img src="covers\/11_site\.jpg"/, '表紙があればその画像を使う');
+  // まとめは表紙の数にかかわらず全部載る。見出しはキャプションで案内している『リスト名』
+  assert.equal((html.match(/<section class="list"/g) || []).length, 11);
+  assert.match(html, /『テスト収納』/);
+});
+
+test('公開中の投稿がないときは、表紙の一覧を出さずに次に何が起きるかを書く', () => {
+  const html = renderPage([], new Set());
+  assert.doesNotMatch(html, /class="covers"/);
+  assert.match(html, /公開中のまとめはまだありません/);
 });
 
 const workflow = (name) => fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', name), 'utf-8');
