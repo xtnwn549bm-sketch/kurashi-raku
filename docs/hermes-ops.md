@@ -19,6 +19,7 @@ CLAUDE.md の「自動化（Hermes）から触るときの操作境界」と同�
 | P6 | `npm run build-posts -- --all` | 新規 draft の作成のみ。`--force` は既存投稿を壊すので不可 |
 | P7 | `npm run check` | 外部への read-only 接続。トークンを更新しない |
 | P8 | `git status` / `git log` / `git diff` | 読み取りのみ |
+| P9 | `npm run caption -- --post <id>` | 投稿される文章の表示のみ。ファイルを書き換えず、外部にもつながらない |
 
 ## 人が実行する操作（自動化は実行しない）
 

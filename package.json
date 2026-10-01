@@ -13,6 +13,7 @@
     "picks": "node scripts/picks-checklist.js",
     "links": "node scripts/links.js",
     "status": "node scripts/status.js",
+    "caption": "node scripts/caption.js",
     "site": "node scripts/build-site.js",
     "site:preview": "node scripts/build-site.js --preview",
     "publish": "node scripts/publish.js",

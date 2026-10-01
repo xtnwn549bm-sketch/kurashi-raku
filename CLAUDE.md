@@ -18,6 +18,7 @@ npm run images -- --all             # 足りないイラストを OpenAI で生�
 （スライドを目視チェック。イラストが微妙なら --post <id> --redo item3 で作り直し）
 npm run picks                       # 商品選びチェックリスト（docs/picks-checklist.md）
 npm run links -- --post <id> URL1 … URL5   # ユーザーが選んだ商品のURLを登録（ASIN → アソシエイトリンク）
+npm run caption -- --post <id>      # 投稿される文章の最終形と、商品ごとの「キャプションの行 ↔ チェックポイント」を表示（読むだけ）
 npm run status -- --approve <id>    # 規約チェック・商品リンクがそろっていれば status: ready（投稿待ち）。承認の指紋を保存
 git push                            # GitHub Actions が毎日21時に ready の先頭1本を投稿 → リンク集ページも更新
 npm run status                      # 投稿ごとの「次にやること」
@@ -44,6 +45,12 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 
 ユーザーが「01の商品URLこれ」と貼ってきたら、`npm run links -- --post <id> <URL…>` で登録する。
 
+ユーザーが選んだ商品がチェックポイントを満たさないときは、登録する前に「別の商品を選ぶ」か「チェックポイントをその商品に合わせて書き換える」かをユーザーに聞く。書き換えるときは、その都度次の4つをセットでやる:
+1. `products[].points` を書き換える（上のルールどおり。書き換えた理由は `products[].review.note` に残す）
+2. `caption` の同じ番号の行（`01 〇〇 … 一言`）も新しいチェックポイントに合わせて書き直す
+3. `npm run images -- --post <id> --no-api` でスライドを作り直して目視チェック
+4. `npm run caption -- --post <id>` の出力（投稿される文章そのもの）をユーザーに見せてから、承認に進む
+
 **商品を推測で登録しない。** チェックポイントを満たすか確かめられない商品は登録・承認しない。投稿済みの商品が条件に合わないと分かったら、Instagram の投稿は触らず、post.json でリンクを外して `rejectedAsins` と `linkHold` に記録する（[docs/operations.md](docs/operations.md)）。
 
 ## 自動化（Hermes）から触るときの操作境界
@@ -52,6 +59,7 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 
 自動で実行してよい:
 - `npm run status` / `npm run status -- --json`（読むだけ）
+- `npm run caption -- --post <id>`（読むだけ）
 - `npm test`（外部サービスに無接続）
 - `npm run picks`（`docs/picks-checklist.md` の生成だけ。git 管理下の成果物）
 - `npm run images -- --post <id> --no-api`（**status: written の投稿だけ**。ready の再合成は承認の指紋を壊すので不可）
