@@ -22,7 +22,7 @@
         "キャスター付きで動かせる"
       ],
       "illustration": "X字に開く折りたたみ式の室内物干しスタンドに、タオルとシャツが掛かっている様子。脚に小さなキャスター",
-      "asin": "",
+      "asin": "B0G2BYXSFD",
       "rejectedAsins": [
         {
           "asin": "B0CCN3RM36",
@@ -30,14 +30,10 @@
           "checkedAt": "2026-10-01"
         }
       ],
-      "linkHold": {
-        "since": "2026-10-01",
-        "reason": "チェックポイント「キャスター付きで動かせる」を満たす商品を確認中"
-      },
       "review": {
         "checkedAt": "2026-10-01",
-        "result": "mismatch",
-        "note": "B0CCN3RM36 = tower 6620。薄くたためる（収納時W25×D25cm）・横幅（パイプ内寸W150cm）は満たすが、キャスターの記載なし（山崎実業 公式 https://www.yamajitsu.co.jp/product/item/01202/）"
+        "result": "user-selected",
+        "note": "B0G2BYXSFD はユーザーが3つのチェックポイントを確認して選んだ商品（Claude は検索で商品名を特定できず、仕様は未照合）"
       }
     },
     {
