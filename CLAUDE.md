@@ -7,6 +7,7 @@
 - 手作業のセットアップ: [docs/setup-guide.md](docs/setup-guide.md)
 - 投稿の型・キャプション・守るルール: [docs/content-strategy.md](docs/content-strategy.md)
 - アカウント設計: [docs/account-profile.md](docs/account-profile.md)
+- 毎日の運用・困ったとき（投稿結果が不明、リンク保留など）: [docs/operations.md](docs/operations.md)
 
 ## 投稿を作る流れ
 
@@ -17,8 +18,10 @@ npm run images -- --all             # 足りないイラストを OpenAI で生�
 （スライドを目視チェック。イラストが微妙なら --post <id> --redo item3 で作り直し）
 npm run picks                       # 商品選びチェックリスト（docs/picks-checklist.md）
 npm run links -- --post <id> URL1 … URL5   # ユーザーが選んだ商品のURLを登録（ASIN → アソシエイトリンク）
-npm run status -- --approve <id>    # 規約チェック・商品リンクがそろっていれば status: ready（投稿待ち）
+npm run status -- --approve <id>    # 規約チェック・商品リンクがそろっていれば status: ready（投稿待ち）。承認の指紋を保存
 git push                            # GitHub Actions が毎日21時に ready の先頭1本を投稿 → リンク集ページも更新
+npm run status                      # 投稿ごとの「次にやること」
+npm test                            # コードを変えたら。外部サービスにはつながない
 ```
 
 ## Claude が post.json の文言を書くときのルール
@@ -40,6 +43,8 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 
 ユーザーが「01の商品URLこれ」と貼ってきたら、`npm run links -- --post <id> <URL…>` で登録する。
 
+**商品を推測で登録しない。** チェックポイントを満たすか確かめられない商品は登録・承認しない。投稿済みの商品が条件に合わないと分かったら、Instagram の投稿は触らず、post.json でリンクを外して `rejectedAsins` と `linkHold` に記録する（[docs/operations.md](docs/operations.md)）。
+
 ## 実装メモ
 - スライドの文字はすべてプログラムで描く（[lib/slides.js](lib/slides.js) / [lib/draw.js](lib/draw.js)）。AI にはイラスト（文字なし・正方形）だけを作らせる（[lib/illustrations.js](lib/illustrations.js)）
 - イラスト生成は OpenAI Image API（[lib/openai-image.js](lib/openai-image.js)、既定は `gpt-image-2` / medium）。ChatGPT のサブスクとは別課金で、API組織の本人確認が必要。手作業なら `npm run images -- --post <id> --prompts` で出たプロンプトを ChatGPT に貼り、`posts/<id>/illust/<key>.png` に保存して `--no-api` で合成
@@ -48,4 +53,7 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 - 商品リンクは `https://www.amazon.co.jp/dp/<ASIN>?tag=<トラッキングID>`（[lib/amazon.js](lib/amazon.js)）。商品データAPI（Creators API）は「直近30日で適格販売10件」を満たすまで使えない
 - リンク集ページは [scripts/build-site.js](scripts/build-site.js) → `site/`（コミットしない）。`pages.yml` が GitHub Pages に公開。自動投稿後は `publish.yml` から呼ぶ（bot の push では push トリガーが動かないため）
 - Instagram は画像を公開URLからしか受け取れないので、投稿時に Supabase Storage（公開バケット）へ上げてから渡す: [lib/storage.js](lib/storage.js)
+- 公開の流れ（[lib/publisher.js](lib/publisher.js)）: 公開直前チェック（承認の指紋＝文章・商品リンク・画像・トラッキングIDが承認時と同じか）→「投稿中（publishing）」を push → 公開 →「投稿済み」を push。結果不明の `publishing` が残っていたら Instagram の最近の投稿と照合し、見つからなければ止まる（自動で再投稿しない）
+- `scripts/images.js` の `--no-api` は minimist では `api: false` になる。`args.api !== false` で判定する
+- トークン更新（[lib/token-refresh.js](lib/token-refresh.js)）は、新しいトークンを確かめられたときだけ保存する。Secret へのパイプは使わない
 - `.env` はコミットしない。GitHub では Secrets に同じ値を入れる。リポジトリは GitHub Pages のために公開（キー類は入らない）

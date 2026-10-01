@@ -23,8 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       published: ${{ steps.record.outputs.published }}
+    env:
+      IG_USER_ID: ${{ secrets.IG_USER_ID }}
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      IG_API_VERSION: ${{ vars.IG_API_VERSION || 'v25.0' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_BUCKET: ${{ vars.SUPABASE_BUCKET || 'ig-images' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 再実行（Re-run）でも、起動時のコミットではなく最新の main の投稿状態で判断する
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -33,32 +44,61 @@ jobs:
 
       - run: npm ci
 
-      - name: 次の1本を投稿
-        env:
-          IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_API_VERSION: ${{ vars.IG_API_VERSION || 'v25.0' }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          SUPABASE_BUCKET: ${{ vars.SUPABASE_BUCKET || 'ig-images' }}
-        run: node scripts/publish.js ${{ inputs.dry_run && '--dry-run' || '' }}
+      - name: git の設定
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: 投稿済みの記録をコミット
+      - name: ドライラン（公開しない）
+        if: ${{ inputs.dry_run }}
+        run: node scripts/publish.js --dry-run
+
+      # 投稿結果が不明な投稿が残っていたら、Instagram と照合する。見つからなければここで止まる（自動で再投稿しない）
+      - name: 公開前チェックと「投稿中」の記録
+        id: prepare
+        if: ${{ !inputs.dry_run }}
+        run: node scripts/publish.js --prepare
+
+      # この push が失敗したら公開しない（記録が残らないまま投稿すると、次の実行で重複するため）
+      - name: 投稿状態を push
+        if: steps.prepare.outputs.action == 'publish' || steps.prepare.outputs.action == 'reconciled'
+        run: |
+          git add posts
+          git commit -m "投稿状態を記録: ${{ steps.prepare.outputs.post }} (${{ steps.prepare.outputs.action }})"
+          git push
+
+      - name: Instagram に公開
+        if: steps.prepare.outputs.action == 'publish'
+        run: node scripts/publish.js --execute "${{ steps.prepare.outputs.post }}"
+
+      # 公開に失敗しても、ready に戻した / 結果不明（publishing）のままにした記録を残す
+      - name: 投稿結果を push
         id: record
+        if: always() && (steps.prepare.outputs.action == 'publish' || steps.prepare.outputs.action == 'reconciled')
+        env:
+          POST_ID: ${{ steps.prepare.outputs.post }}
         run: |
           if [ -n "$(git status --porcelain posts)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add posts
-            git commit -m "投稿済みを記録: $(date -u +%Y-%m-%d)"
-            git push
-            echo "published=true" >> "$GITHUB_OUTPUT"
+            git commit -m "投稿結果を記録: ${POST_ID}"
+            pushed=false
+            for i in 1 2 3; do
+              if git push; then pushed=true; break; fi
+              sleep 5
+              git pull --rebase
+            done
+            if [ "$pushed" != true ]; then
+              echo "::error::投稿結果を push できなかった。次の実行で Instagram と照合されるので、再投稿はされない"
+              exit 1
+            fi
           fi
+          status=$(node -e "console.log(require('./posts/' + process.env.POST_ID + '/post.json').status)")
+          if [ "$status" = "published" ]; then echo "published=true" >> "$GITHUB_OUTPUT"; fi
 
-  # 投稿した日だけ、その回をリンク集ページに載せる（投稿待ちがない日・ドライランでは動かない）
+  # 投稿した日だけ、その回をリンク集ページに載せる
   site:
     needs: publish
-    if: ${{ needs.publish.outputs.published == 'true' }}
+    if: always() && needs.publish.outputs.published == 'true'
     permissions:
       contents: read
       pages: write

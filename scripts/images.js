@@ -12,64 +12,26 @@
  *   node scripts/images.js --post 01_heyaboshi --prompts    # ChatGPT で手作りする用のプロンプトを表示
  */
 
-const fs = require('fs');
 const path = require('path');
 const minimist = require('minimist');
-const { loadPost, listPosts, slidePath } = require('../lib/posts');
-const { slideCount, missingTextFields, composeSlide } = require('../lib/slides');
+const { loadPost, listPosts } = require('../lib/posts');
 const { illustrationJobs, illustrationPath } = require('../lib/illustrations');
-const { MODEL, QUALITY, generateIllustration } = require('../lib/openai-image');
+const { buildPostImages } = require('../lib/image-pipeline');
 
-const args = minimist(process.argv.slice(2), { boolean: ['all', 'no-api', 'prompts'], string: ['post', 'redo'] });
-const redo = new Set([].concat(args.redo || []).flatMap((r) => String(r).split(',')));
+// minimist は --no-api を「api を false にする」と解釈するので、api（既定 true）として受け取る
+const args = minimist(process.argv.slice(2), {
+  boolean: ['all', 'api', 'prompts'],
+  string: ['post', 'redo'],
+  default: { api: true },
+});
+const useApi = args.api !== false;
+const redo = new Set([].concat(args.redo || []).flatMap((r) => String(r).split(',')).filter(Boolean));
 
 function printPrompts(post) {
   console.log(`\n▶ ${post.id} のイラスト用プロンプト（ChatGPT で作ったら、書いてある場所にPNGで保存 → --no-api で合成）`);
   for (const job of illustrationJobs(post)) {
     console.log(`\n----- 保存先: ${path.relative(process.cwd(), illustrationPath(post.id, job.key))}\n${job.prompt}`);
   }
-}
-
-/** @returns {Promise<{ ok: boolean, generated: number }>} */
-async function buildPost(post) {
-  const missing = missingTextFields(post);
-  if (missing.length > 0) {
-    console.error(`✗ ${post.id}: 文言が足りない → ${missing.join(', ')}`);
-    return { ok: false, generated: 0 };
-  }
-
-  console.log(`\n▶ ${post.id}「${post.title}」`);
-  const illustrations = {};
-  let generated = 0;
-  for (const job of illustrationJobs(post)) {
-    const file = illustrationPath(post.id, job.key);
-    if (fs.existsSync(file) && !redo.has(job.key)) {
-      illustrations[job.key] = fs.readFileSync(file);
-      continue;
-    }
-    if (args['no-api']) {
-      console.error(`  ✗ イラスト ${job.key} がない（--no-api なので生成しない）`);
-      return { ok: false, generated };
-    }
-    try {
-      const png = await generateIllustration(job.prompt);
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.writeFileSync(file, png);
-      fs.writeFileSync(file.replace(/\.png$/, '.prompt.txt'), job.prompt);
-      illustrations[job.key] = png;
-      generated += 1;
-      console.log(`  ✓ イラスト ${job.key} を生成`);
-    } catch (err) {
-      console.error(`  ✗ イラスト ${job.key}: ${err.message}`);
-      return { ok: false, generated };
-    }
-  }
-
-  for (let i = 0; i < slideCount(post); i += 1) {
-    fs.writeFileSync(slidePath(post.id, i), await composeSlide(post, i, illustrations));
-  }
-  console.log(`  ✓ スライド ${slideCount(post)}枚を合成`);
-  return { ok: true, generated };
 }
 
 (async () => {
@@ -86,15 +48,32 @@ async function buildPost(post) {
     return;
   }
 
+  // 課金のある生成モジュールは、API を使うときだけ読み込む
+  const openai = useApi ? require('../lib/openai-image') : null;
+
   let allOk = true;
   let generated = 0;
   for (const post of posts) {
-    const result = await buildPost(post);
-    allOk = result.ok && allOk;
+    console.log(`\n▶ ${post.id}「${post.title}」${useApi ? '' : '（--no-api: イラストは生成しない）'}`);
+    const result = await buildPostImages(post, {
+      useApi,
+      redo,
+      generate: openai ? openai.generateIllustration : undefined,
+      log: (line) => console.log(line),
+    });
     generated += result.generated;
+    if (result.ok) continue;
+    allOk = false;
+    if (result.missingText) console.error(`  ✗ 文言が足りない → ${result.missingText.join(', ')}`);
+    if (result.missingIllustrations) {
+      console.error('  ✗ イラストがないので合成できない（--no-api なので生成もしない）:');
+      result.missingIllustrations.forEach((file) => console.error(`      ${path.relative(process.cwd(), file)}`));
+      console.error('    → 生成するなら --no-api を外す。手作りするなら --prompts で出るプロンプトを ChatGPT に貼って、上の場所に保存');
+    }
+    if (result.error) console.error(`  ✗ ${result.error}`);
   }
 
-  if (generated > 0) console.log(`\n生成したイラスト: ${generated}枚（${MODEL} / quality: ${QUALITY}）`);
+  if (generated > 0) console.log(`\n生成したイラスト: ${generated}枚（${openai.MODEL} / quality: ${openai.QUALITY}）`);
   console.log(allOk
     ? '\nスライドを目視チェックして、イラストが微妙なら --redo item<番号> で作り直してね。次は npm run picks で商品選び'
     : '\n失敗したものがある。上のメッセージを見て直してね');

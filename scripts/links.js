@@ -17,7 +17,7 @@ const args = minimist(process.argv.slice(2), { string: ['post', 'item', '_'] });
 
 function printStatus(post) {
   post.products.forEach((p, i) => {
-    const link = p.asin ? productLink(p.asin) : '（未登録）';
+    const link = p.asin ? productLink(p.asin) : `（未登録${p.linkHold ? '・条件に合う商品を確認中' : ''}）`;
     console.log(`${String(i + 1).padStart(2, '0')} ${p.shortName || p.keyword}: ${link}`);
   });
   const rest = post.products.filter((p) => !p.asin).length;
@@ -40,9 +40,15 @@ function printStatus(post) {
     }
     for (const [offset, url] of urls.entries()) {
       const product = post.products[start + offset];
-      product.asin = await resolveAsin(url);
+      const asin = await resolveAsin(url);
+      // 条件に合わないと確認して外した商品は、もう一度登録しない
+      const rejected = (product.rejectedAsins || []).find((r) => r.asin === asin);
+      if (rejected) throw new Error(`${asin} は条件に合わないとして外した商品（${rejected.reason}）。別の商品を選んで`);
+      product.asin = asin;
+      delete product.linkHold;
       console.log(`✓ ${String(start + offset + 1).padStart(2, '0')} ${product.shortName}: ${product.asin}`);
     }
+    if (post.status === 'ready') console.log('※ 投稿待ちの商品リンクを変えたので、npm run status -- --approve で承認し直して');
     savePost(post);
     console.log('');
   }

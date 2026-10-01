@@ -11,8 +11,10 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT } = require('../lib/config');
 const { listPosts } = require('../lib/posts');
+const { isValidAsin } = require('../lib/amazon');
 
-const pending = listPosts().filter((p) => p.status !== 'published' && p.products.some((item) => !item.asin));
+// 未登録の商品がある投稿（投稿済みでリンクを保留にしたものも含む）
+const pending = listPosts().filter((p) => p.status !== 'publishing' && p.products.some((item) => !isValidAsin(item.asin)));
 const posts = pending.filter((p) => p.status !== 'draft');
 const drafts = pending.filter((p) => p.status === 'draft');
 
@@ -42,12 +44,17 @@ for (const post of posts) {
   lines.push(`## ${post.id}「${post.title}」（status: ${post.status}）`, '', `- 価格の目安: ${range}`, '');
   post.products.forEach((p, i) => {
     lines.push(
-      `- [${p.asin ? 'x' : ' '}] ${String(i + 1).padStart(2, '0')} ${p.shortName || p.keyword}${p.asin ? `（登録済み: ${p.asin}）` : ''}`,
+      `- [${p.asin ? 'x' : ' '}] ${String(i + 1).padStart(2, '0')} ${p.shortName || p.keyword}${p.asin ? `（登録済み: ${p.asin}）` : ''}${p.linkHold ? `（リンク保留: ${p.linkHold.reason}）` : ''}`,
+      ...(p.rejectedAsins || []).map((r) => `  - 選ばない: ${r.asin}（${r.reason}）`),
       `  - チェックポイント: ${(p.points || []).join(' ／ ') || '（未作成）'}`,
       `  - Amazonで探す: https://www.amazon.co.jp/s?k=${encodeURIComponent(p.keyword)}`,
     );
   });
-  lines.push('', '```', `npm run links -- --post ${post.id} URL1 URL2 URL3 URL4 URL5`, '```', '');
+  const held = post.products.map((p, i) => (isValidAsin(p.asin) ? null : i + 1)).filter(Boolean);
+  const command = post.status === 'published'
+    ? held.map((n) => `npm run links -- --post ${post.id} --item ${n} URL`).join('\n')
+    : `npm run links -- --post ${post.id} URL1 URL2 URL3 URL4 URL5`;
+  lines.push('', '```', command, '```', '');
 }
 
 if (drafts.length > 0) {

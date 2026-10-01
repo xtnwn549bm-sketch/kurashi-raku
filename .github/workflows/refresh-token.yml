@@ -19,11 +19,10 @@ jobs:
 
       - run: npm ci
 
+      # 更新に成功して新しいトークンを確認できたときだけ Secret を書き換える（失敗しても今の Secret は空にならない）
       - name: トークンを更新して Secrets に保存
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           # Secrets を書き換えるため、リポジトリの Secrets 書き込み権限つきの個人アクセストークンが必要
           GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          set -o pipefail
-          node scripts/refresh-token.js --stdout | gh secret set IG_ACCESS_TOKEN --repo "${{ github.repository }}"
+        run: node scripts/refresh-token.js --github-secret IG_ACCESS_TOKEN --repo "${{ github.repository }}"
