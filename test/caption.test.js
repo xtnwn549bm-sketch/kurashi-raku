@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { CAPTION_HEADER } = require('../lib/posts');
+const { CAPTION_HEADER, buildCaption } = require('../lib/posts');
 
 const ROOT = path.resolve(__dirname, '..');
 const runCaption = (args) => spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'caption.js'), ...args], { cwd: ROOT, env: process.env, encoding: 'utf-8' });
@@ -38,4 +38,24 @@ test('規約に引っかかる文章なら、どこを直すかを出して終�
   assert.equal(result.status, 1);
   assert.match(result.stdout, /規約チェック: 直すところあり/);
   assert.match(result.stdout, /caption: 「最安」/);
+});
+
+const accountPath = path.join(env.contentDir, 'account.json');
+const setSiteUrl = (siteUrl) => {
+  const account = JSON.parse(fs.readFileSync(accountPath, 'utf-8'));
+  fs.writeFileSync(accountPath, JSON.stringify({ ...account, siteUrl }));
+};
+
+test('キャプションに本文のあと・開示文の前でリンク集のURLが入る', () => {
+  setSiteUrl('https://www.example.com/');
+  const caption = buildCaption(samplePost());
+  assert.ok(caption.startsWith(CAPTION_HEADER), '1行目は #PR・AI表記のまま');
+  const link = caption.indexOf('🔗 リンク集 https://www.example.com/');
+  assert.ok(link > caption.indexOf('5つまとめたよ'), '本文のあと');
+  assert.ok(link < caption.indexOf('Amazonのアソシエイトとして'), '開示文の前');
+});
+
+test('siteUrl が空ならリンク集の行は付けない', () => {
+  setSiteUrl('');
+  assert.doesNotMatch(buildCaption(samplePost()), /リンク集/);
 });

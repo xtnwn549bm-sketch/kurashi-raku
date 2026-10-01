@@ -38,7 +38,7 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 - `cover.title`: 表紙の大見出し。**改行位置を `\n` で指定**して、1行10〜12文字にする（例: `"部屋干しがラクになる\n洗濯グッズ5選"`）。改行を抜くと `title` と同じになるように
 - `cover.subtitle`: 悩みが伝わる一言（16文字以内）
 - `cta.headline`: まとめスライドの大見出し（12文字以内）
-- `caption`: [content-strategy.md](docs/content-strategy.md) のテンプレどおりの **本文だけ**。`#PR`・AI表記・アソシエイト開示文・ハッシュタグは自動で付くので書かない
+- `caption`: [content-strategy.md](docs/content-strategy.md) のテンプレどおりの **本文だけ**。`#PR`・AI表記・リンク集ページのURL・アソシエイト開示文・ハッシュタグは自動で付くので書かない
 - `hashtags`: 5個まで（固定 `#amazonで買えるもの` `#暮らしのアイデア` ＋テーマ別3個）
 
 禁止（`lib/compliance.js` が自動で止める）: 価格・送料、★・評価の数字・レビュー件数・順位、「最安」「No.1」「必ず」などの断定、「使ってみた」「購入品」などの体験談、「Amazon公式」「Amazonおすすめ」、配送条件。Amazonの商品画像は使わない。
