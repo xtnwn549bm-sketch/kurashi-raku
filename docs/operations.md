@@ -2,6 +2,16 @@
 
 まず `npm run status` を見る。投稿ごとに「→ 次にやること」が出る。
 
+スクリプト（Hermes や他の自動化）から読む場合は `npm run status -- --json`。同じ情報を JSON で出し、`npm run status` の説明文は出ない。投稿ごとに次 acetyle 時の `nextAction` が機械可読で入る:
+
+- `nextAction.code`: `write_copy` / `generate_slides` / `pick_products` / `approve` / `reapprove` / `wait_publish` / `resolve_unknown` / `replace_held_link` / `verify_checkpoints` / `nothing`
+- `nextAction.blockedBy`: `user` なら人が実行する操作（商品選定・URL 登録・承認・結果不明の解決・リンクの差し替え）。`none` なら人手は不要
+- `nextAction.command`: 人が実行するコマンドの型（placeholder 付き）
+- `problems.content` / `problems.publish`: 既存のチェック結果（`lib/checks.js` と同じ判定）
+- `publishingUnresolved` / `autoPublishBlocked`: 結果が不明な投稿があればここに出る（自動投稿は止まる）
+
+`--json` は `--approve` / `--resolve` と同時に指定できない（別々に走らせる）。判断材料だけなら `node scripts/status.js --json` を直接叩けば npm の見出し行が付かない。
+
 ## 投稿の状態
 
 | status | 意味 | 次にやること |

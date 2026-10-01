@@ -21,6 +21,7 @@ npm run links -- --post <id> URL1 … URL5   # ユーザーが選んだ商品の
 npm run status -- --approve <id>    # 規約チェック・商品リンクがそろっていれば status: ready（投稿待ち）。承認の指紋を保存
 git push                            # GitHub Actions が毎日21時に ready の先頭1本を投稿 → リンク集ページも更新
 npm run status                      # 投稿ごとの「次にやること」
+npm run status -- --json            # 同じ情報を機械可読で。投稿ごとに nextAction.code と blockedBy（user なら人が実行する）が出る
 npm test                            # コードを変えたら。外部サービスにはつながない
 ```
 
@@ -44,6 +45,35 @@ draft の post.json を開き、以下を埋めて `status` を `"written"` に�
 ユーザーが「01の商品URLこれ」と貼ってきたら、`npm run links -- --post <id> <URL…>` で登録する。
 
 **商品を推測で登録しない。** チェックポイントを満たすか確かめられない商品は登録・承認しない。投稿済みの商品が条件に合わないと分かったら、Instagram の投稿は触らず、post.json でリンクを外して `rejectedAsins` と `linkHold` に記録する（[docs/operations.md](docs/operations.md)）。
+
+## 自動化（Hermes）から触るときの操作境界
+
+上の商品選定・URL登録・承認・公開はすべて**人が実行する操作**で、Claude Code でも Hermes でも自動で走らせない。ここでは「人が実行する」を明確にして、自動化が越えない境界を定義する。一覧: [docs/hermes-ops.md](docs/hermes-ops.md)
+
+自動で実行してよい:
+- `npm run status` / `npm run status -- --json`（読むだけ）
+- `npm test`（外部サービスに無接続）
+- `npm run picks`（`docs/picks-checklist.md` の生成だけ。git 管理下の成果物）
+- `npm run images -- --post <id> --no-api`（**status: written の投稿だけ**。ready の再合成は承認の指紋を壊すので不可）
+- `npm run images -- --post <id> --prompts`（プロンプトの表示のみ）
+- `npm run build-posts -- --all`（新規 draft のみ。`--force` は不可）
+- `npm run check`（外部への read-only。トークンは更新しない）
+- `git status` / `git log` / `git diff`（読み取りのみ）
+
+人が実行する操作（自動化は実行せず、コマンドの型を提示して止まる）:
+- Amazon の商品選定そのもの（`products[].asin` を推測・補完・検索で埋めない）
+- `npm run links`（商品URLの登録。`rejectedAsins` 付きの ASIN を再登録しない）
+- `npm run status -- --approve <id>`（承認の指紋を作る）
+- `npm run status -- --resolve <id> --published <URL>` / `--not-published`（結果が不明な投稿の復旧）
+- `npm run publish` / `publish:dry` / `publish.js` の全モード（コンテナ作成だけでも Instagram に触れる）
+- Instagram への投稿・編集・削除・再投稿
+- `git commit` / `git push`（bot の push は push トリガーを動かさない既存設計のため）
+- `npm run images -- --redo`（OpenAI の課金）/ `npm run refresh-token`（Secret の書き込み）
+- `.env` / GitHub Secrets / `content/account.json` / `lib/compliance.js` の編集
+
+`npm run status -- --json` の `nextAction.blockedBy` が `user` なら、その操作は人が実行する。
+`code` は `write_copy` / `generate_slides` / `pick_products` / `approve` / `reapprove` /
+`wait_publish` / `resolve_unknown` / `replace_held_link` / `verify_checkpoints` / `nothing` のいずれか。
 
 ## 実装メモ
 - スライドの文字はすべてプログラムで描く（[lib/slides.js](lib/slides.js) / [lib/draw.js](lib/draw.js)）。AI にはイラスト（文字なし・正方形）だけを作らせる（[lib/illustrations.js](lib/illustrations.js)）

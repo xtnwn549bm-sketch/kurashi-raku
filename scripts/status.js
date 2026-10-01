@@ -3,24 +3,22 @@
  *
  * 使い方:
  *   npm run status                                                   # 一覧と次にやること
+ *   npm run status -- --json                                         # 同じ情報をJSONで（人が読む文言は出さない）
  *   npm run status -- --approve 01_heyaboshi                         # チェックを通れば投稿待ち（ready）にする
  *   npm run status -- --resolve 01_heyaboshi --published <投稿URL>   # 結果不明（publishing）→ 投稿済みとして記録
  *   npm run status -- --resolve 01_heyaboshi --not-published         # 結果不明（publishing）→ 未投稿なので投稿待ちに戻す
  */
 
-const fs = require('fs');
 const minimist = require('minimist');
-const { listPosts, loadPost, savePost, slidePath } = require('../lib/posts');
-const { slideCount } = require('../lib/slides');
+const { listPosts, loadPost, savePost } = require('../lib/posts');
 const { contentProblems, approvalFingerprint, publishProblems } = require('../lib/checks');
 const { isValidAsin } = require('../lib/amazon');
+const { nextAction, buildReport } = require('../lib/status-report');
 
 const args = minimist(process.argv.slice(2), {
   string: ['approve', 'resolve', 'published'],
-  boolean: ['not-published'],
+  boolean: ['not-published', 'json'],
 });
-
-const no = (i) => String(i + 1).padStart(2, '0');
 
 function fail(message) {
   console.error(`✗ ${message}`);
@@ -63,33 +61,13 @@ function resolve(id) {
   console.log(`✓ ${post.id} を投稿済み（published）として記録した`);
 }
 
-/** 投稿ごとの「次にやること」 */
-function nextAction(post) {
-  if (post.status === 'draft') return '文言を書く（Claude に「draft の文言を書いて」と頼む）';
-  if (post.status === 'publishing') {
-    return '⚠ 投稿結果が不明。Instagram を確認して --resolve <id> --published <URL> か --not-published（docs/operations.md）';
-  }
-  if (post.status === 'published') {
-    const notes = [];
-    const held = post.products.map((p, i) => (isValidAsin(p.asin) ? null : i + 1)).filter(Boolean);
-    if (held.length > 0) {
-      notes.push(`リンク保留 ${held.map((n) => no(n - 1)).join(', ')}：条件を満たす商品を確認して npm run links -- --post ${post.id} --item ${held[0]} <URL>`);
-    }
-    const unchecked = post.products
-      .map((p, i) => (p.review && ['unverified', 'partial'].includes(p.review.result) ? no(i) : null)).filter(Boolean);
-    if (unchecked.length > 0) notes.push(`チェックポイントを確認しきれていない商品 ${unchecked.join(', ')}（post.json の review を見て、Amazon の商品ページで確認）`);
-    return notes.join('\n           → ');
-  }
-  if (post.status === 'ready') {
-    const problems = publishProblems(post);
-    return problems.length > 0 ? `⚠ このままだと公開されない: ${problems[0]}` : '投稿待ち（自動投稿で順番に公開される）';
-  }
-  // written
-  const missingSlides = Array.from({ length: slideCount(post) }, (_, i) => i).filter((i) => !fs.existsSync(slidePath(post.id, i)));
-  if (missingSlides.length > 0) return `スライドを作る: npm run images -- --post ${post.id}`;
-  const noLink = post.products.filter((p) => !isValidAsin(p.asin)).length;
-  if (noLink > 0) return `商品を選んでURLを登録（あと${noLink}個）: docs/picks-checklist.md → npm run links -- --post ${post.id} URL…`;
-  return `確認して承認: npm run status -- --approve ${post.id}`;
+/** 投稿ごとの「次にやること」は lib/status-report.js（--json と同じ判定を共有） */
+
+if (args.json) {
+  // 読むだけの出力。承認・解決とは併用できない（片方を誤って実行するのを防ぐ）
+  if (args.approve || args.resolve) fail('--json は --approve / --resolve とは同時に指定しない');
+  console.log(JSON.stringify(buildReport(listPosts()), null, 2));
+  process.exit(0);
 }
 
 if (args.approve) {
