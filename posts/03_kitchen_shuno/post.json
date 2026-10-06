@@ -3,7 +3,7 @@
   "title": "キッチンの出しっぱなしをゼロにする収納5選",
   "listName": "キッチンすっきり収納",
   "angle": "作業スペースが狭い家でもスッキリ。浮かせる・まとめる収納",
-  "status": "publishing",
+  "status": "ready",
   "priceRange": {
     "min": 1000,
     "max": 12000
@@ -83,10 +83,5 @@
   "approval": {
     "fingerprint": "b6bdb764ee1a966a20662c0f1d8ac64c1632feacf66330c3c060708547987e96",
     "approvedAt": "2026-10-06T11:04:07.683Z"
-  },
-  "publishAttempt": {
-    "id": "44562226-47aa-47e1-bbae-38b7e1101ccf",
-    "startedAt": "2026-10-06T12:07:26.912Z",
-    "phase": "prepared"
   }
 }
