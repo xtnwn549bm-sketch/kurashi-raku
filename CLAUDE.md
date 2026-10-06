@@ -20,7 +20,7 @@ npm run picks                       # 商品選びチェックリスト（docs/p
 npm run links -- --post <id> URL1 … URL5   # ユーザーが選んだ商品のURLを登録（ASIN → アソシエイトリンク）
 npm run caption -- --post <id>      # 投稿される文章の最終形と、商品ごとの「キャプションの行 ↔ チェックポイント」を表示（読むだけ）
 npm run status -- --approve <id>    # 規約チェック・商品リンクがそろっていれば status: ready（投稿待ち）。承認の指紋を保存
-git push                            # GitHub Actions が毎日21時に ready の先頭1本を投稿 → リンク集ページも更新
+git push                            # GitHub Actions が毎日8時に ready の先頭1本を投稿 → リンク集ページも更新
 npm run status                      # 投稿ごとの「次にやること」
 npm run status -- --json            # 同じ情報を機械可読で。投稿ごとに nextAction.code と blockedBy（user なら人が実行する）が出る
 npm test                            # コードを変えたら。外部サービスにはつながない

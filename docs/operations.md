@@ -18,7 +18,7 @@
 |---|---|---|
 | `draft` | 文言がまだ | Claude に文言を書いてもらう |
 | `written` | 文言とスライドができた | 商品を選んでURLを登録 → 承認 |
-| `ready` | 承認済み・投稿待ち | 何もしない（毎日21時に1本ずつ公開） |
+| `ready` | 承認済み・投稿待ち | 何もしない（毎日8時に1本ずつ公開） |
 | `publishing` | 公開の途中で止まった（結果が不明） | 下の「投稿結果が不明」を見る |
 | `published` | 投稿済み | リンク保留があれば代わりの商品を探す |
 
@@ -46,7 +46,7 @@ Instagram の投稿は編集・再投稿しない。リンク集ページ側で�
 - 見つかった → 自動で「投稿済み」として記録する（再投稿しない）
 - 見つからない → **自動投稿を止めて** GitHub Actions が赤くなる。Instagram を見て、どちらかを実行して `git push`:
   - 投稿されていた: `npm run status -- --resolve <id> --published https://www.instagram.com/p/...`
-  - 投稿されていない: `npm run status -- --resolve <id> --not-published`（次の21時に公開される）
+  - 投稿されていない: `npm run status -- --resolve <id> --not-published`（次の8時に公開される）
 
 GitHub Actions を再実行（Re-run）しても、最新の main の記録で判断するので二重投稿にはならない。
 

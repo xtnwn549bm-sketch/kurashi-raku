@@ -2,8 +2,8 @@ name: Instagram自動投稿
 
 on:
   schedule:
-    # 毎日 21:00 JST（= 12:00 UTC）。GitHub側の混雑で数分〜数十分遅れることがある
-    - cron: '0 12 * * *'
+    # 毎日 8:00 JST（= 前日 23:00 UTC）。GitHub側の混雑で数分〜数十分遅れることがある
+    - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
