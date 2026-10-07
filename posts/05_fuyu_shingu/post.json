@@ -3,7 +3,7 @@
   "title": "寒い朝がつらくない冬の寝具5選",
   "listName": "冬のあったか寝具",
   "angle": "冬支度。電気代を抑えつつ暖かく眠る",
-  "status": "ready",
+  "status": "publishing",
   "priceRange": {
     "min": 1000,
     "max": 15000
@@ -83,5 +83,10 @@
   "approval": {
     "fingerprint": "58f7401237ed1c0c9d3a052fb30f040d560c3df47f73ae93e206e5cb7c91b936",
     "approvedAt": "2026-10-06T11:04:10.084Z"
+  },
+  "publishAttempt": {
+    "id": "3b645ce3-fecc-48e8-91ba-fef946f65419",
+    "startedAt": "2026-10-07T02:06:04.090Z",
+    "phase": "prepared"
   }
 }
