@@ -3,7 +3,7 @@
   "title": "食材を使い切れる冷蔵庫収納5選",
   "listName": "冷蔵庫収納",
   "angle": "食品ロスと食費を減らす。見える化・立てる収納",
-  "status": "ready",
+  "status": "publishing",
   "priceRange": {
     "min": 800,
     "max": 8000
@@ -83,5 +83,10 @@
   "approval": {
     "fingerprint": "7f2ffc5a1f1ca8115287ca8849206dde7833d53ccade5090706a6e4d9636adb7",
     "approvedAt": "2026-10-06T11:04:13.565Z"
+  },
+  "publishAttempt": {
+    "id": "1aaef717-3a75-42f1-9302-970c603a760b",
+    "startedAt": "2026-10-09T02:47:40.956Z",
+    "phase": "prepared"
   }
 }
